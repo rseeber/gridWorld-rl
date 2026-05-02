@@ -6,6 +6,15 @@ class animal:
         self.y = y
         self.id = id
 
+class Symbol:
+    EMPTY = None
+    ANIMAL = 0
+    FOOD = 1
+    WALL = 2
+
+    HIDDEN = -1
+    OUT_OF_BOUNDS = -2
+
 
 world = [] # options {animal 0, food 1, wall 2}
 worldX = None
@@ -13,7 +22,12 @@ worldY = None
 animals = []
 
 def getWorld(x, y):
-    return world[y][x]
+    try:
+        val = world[y][x]
+    except IndexError:
+        val = Symbol.OUT_OF_BOUNDS # -2: Out of bounds
+    return val
+
 
 def setWorld(x, y, value, overwrite=True):
     global world
@@ -30,7 +44,28 @@ def initWorld(sizeX, sizeY, homogValue=None):
         for x in range(sizeX):
             world[y].append(homogValue)
 
-
+def printVision(arr, centerX, centerY, r):
+    convert = {Symbol.EMPTY: "_", 
+               Symbol.ANIMAL: "A", 
+               Symbol.FOOD: "*", 
+               Symbol.WALL: "#", 
+               Symbol.HIDDEN: "?"}
+    # iterate through each x, y tile
+    for y in range(len(arr)):
+        for x in range(len(arr[y])):
+            # get the value at that tile
+            val = arr[y][x]
+            globalX = x + centerX - r
+            globalY = y + centerY - r
+            # print the id if it's an animal
+            if val == Symbol.ANIMAL:
+                val = findAnimal(globalX, globalY).id
+            else:
+                # use the conversion table
+                val = convert[val]
+            print(f"{val} ", end="")
+        print()
+    print("\n")
 
 def printWorld():
     convert = {None: "_", 0: "A", 1: "*", 2: "#"}
@@ -63,6 +98,25 @@ def findAnimal_id(id):
     for a in animals:
         if a.id == id:
             return a
+
+def getAnimalVision(animal, r):
+    vision = []
+    # Recall that "x^2 + y^2 < r^2" means that (x,y) is inside of the circle with radius r (centered at the origin)
+    r2 = r * r
+    # iterate through all tiles in a square with radius r around the animal
+    for y in range(2*r + 1):
+        vision.append([])
+        for x in range(2*r + 1):
+            # check if the tile is within a circle of radius r
+            lhs = (x-r)**2 + (y-r)**2
+            if (x-r)**2 + (y-r)**2 <= r2:
+                # include the tile
+                vision[y].append(getWorld(x-r+animal.x, y-r+animal.y))
+            else:
+                vision[y].append(-1) # -1: hidden tile
+    return vision
+            
+
 
 def initGridworld(sizeX, sizeY, organismCnt):
     global worldX, worldY, animals
@@ -117,8 +171,16 @@ def moveAnimal(animal, dx, dy):
 
 
 # MAIN()
+def main():
+    random.seed(101)
+    animals = initGridworld(30, 30, 5)
+    a = animals[0]
 
-initGridworld(30, 30, 5)
+    moveAnimal(a, 1, 1)
+    printWorld()
 
-moveAnimal(animals[0], 1, 1)
-printWorld()
+    vision = getAnimalVision(a, 2)
+    printVision(vision, a.x, a.y, 2)
+
+if __name__ == "__main__":
+    main()
