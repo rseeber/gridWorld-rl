@@ -1,10 +1,12 @@
 import random
 
-class animal:
+class Animal:
     def __init__(self, x, y, id):
         self.x = x
         self.y = y
         self.id = id
+        self.energy = 10
+        self.agent = None
 
 class Symbol:
     EMPTY = None
@@ -79,7 +81,7 @@ def printWorld():
                 try:
                     val = findAnimal(x, y).id
                 except:
-                    print(f"\nx = {x}, y = {y}\nanimals: {animals}")
+                    print(f"\ncouldn't find animal at x = {x}, y = {y}\nanimals: {animals}")
             # otherwise, use the conversion table
             else:
                 val = convert[val]
@@ -125,6 +127,17 @@ def initGridworld(sizeX, sizeY, organismCnt):
     # initialize empty gridworld
     initWorld(sizeX, sizeY)
 
+    # setup playground walls
+    # Top and bottom walls
+    for i in range(worldX):
+        setWorld(i, 0, Symbol.WALL)
+        setWorld(i, worldY-1, Symbol.WALL)
+    # Left and right walls
+    for i in range(worldY):
+        setWorld(0, i, Symbol.WALL)
+        setWorld(worldX-1, i, Symbol.WALL)
+    
+
     # setup the animals
     animals = []
     for i in range(organismCnt):
@@ -135,37 +148,65 @@ def initGridworld(sizeX, sizeY, organismCnt):
             flag = False
             x = round(random.gauss(sizeX/2))
             y = round(random.gauss(sizeY/2))
-        animals.append(animal(x, y, i))
+        animals.append(Animal(x, y, i))
         setWorld(x, y, 0) # 0: animal
 
     # spawn food
-    foodCnt = 20
-    for i in range(foodCnt):
-        x, y = 0, 0
-        flag = True
-        # pick empty x,y coords
-        while(flag or getWorld(x,y) != None):
-            flag = False
-            x = random.randrange(sizeX)
-            y = random.randrange(sizeY)
-        # place the food
-        setWorld(x, y, 1) # 1: food
+    spawnFood(20)
+    # also for now, just spawn some food at the bottom row
+    for i in range(worldX):
+        setWorld(i, worldY-2, Symbol.FOOD, overwrite=False)
 
     print("Gridworld intialized:")
     printWorld()
     return animals
 
+def spawnFood(foodCnt):
+    for i in range(foodCnt):
+        x, y = 0, 0
+        flag = True
+        attempts = 0
+        # pick empty x,y coords
+        while(flag or getWorld(x,y) != None):
+            flag = False
+            x = random.randrange(worldX)
+            y = random.randrange(worldY)
+            # give up if you can't find any empty tiles
+            attempts += 1
+            if attempts > 10:
+                return None
+        # place the food
+        setWorld(x, y, Symbol.FOOD) # 1: food
+
+
 # transform an animal by dx, dy, unless there is something in its destination, then do nothing.
-def moveAnimal(animal, dx, dy):
+def moveAnimal(animal: Animal, dx: int, dy: int):
     global world
 
     x = animal.x
     y = animal.y
 
-    if setWorld(x+dx, y+dy, 0, overwrite=False) == None:
+    newSpot = getWorld(x+dx, y+dy) 
+
+    # Don't allow animals to move to occupied locations
+    if newSpot not in [Symbol.FOOD, Symbol.EMPTY]:
         # Error
         return None
+
+    # depleate energy when moving
+    animal.energy -= 0.1
+
+    if newSpot == Symbol.FOOD:
+        animal.energy += 5
+        # Is this where we should be sending the reward signal?
+        if animal.agent != None:
+            animal.agent.reward(1)
+
+    # place the animal in the NEW position
+    setWorld(x+dx, y+dy, 0)   
+    # set the OLD position to be empty
     setWorld(animal.x, animal.y, None)
+    # update coords on the Animal class object
     animal.x += dx
     animal.y += dy
 
