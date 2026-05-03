@@ -51,7 +51,8 @@ def printVision(arr, centerX, centerY, r):
                Symbol.ANIMAL: "A", 
                Symbol.FOOD: "*", 
                Symbol.WALL: "#", 
-               Symbol.HIDDEN: "?"}
+               Symbol.HIDDEN: "?",
+               Symbol.OUT_OF_BOUNDS: " "}
     # iterate through each x, y tile
     for y in range(len(arr)):
         for x in range(len(arr[y])):

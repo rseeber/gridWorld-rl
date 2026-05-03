@@ -28,7 +28,10 @@ class Agent:
             initValuesAtState(self, state)
 
         # Pick option with highest value function (Exploit)
-        action = np.argmax(self.value[str(state)])
+        action = argmax(self.value[str(state)])
+        # debug output
+        if self.animal.id == 0:
+            print(f"rewards: {self.value[str(state)]}")
 
         n = self.valueCnt[state][action]
         if n > 20:
@@ -44,10 +47,13 @@ class Agent:
         return action
 
     def reward(self, reward: int):
-        print(f"Reward for animal {self.animal.id}!!")
+        if self.animal.id == 0:
+            print(f"Reward for animal {self.animal.id}!!")
         # go through each action in the history
-        for d in self.history:
-        # update the rolling average of the value function for that action
+        for i in range(len(self.history)):
+            d = self.history[i]
+
+            # update the rolling average of the value function for that action
             state = list(d.keys())[0]
             action = d[state]
 
@@ -56,8 +62,14 @@ class Agent:
             print(f"n = {n}")
 
             n += 1
-            avg += (reward - avg) / n # rolling avg calculation
+            # 'thisReward' is the reward for this particular action
+            # the propogation of value increase for  an action more recent 
+            # to a reward signal should be increased more.
+            thisReward = reward / (len(self.history) - i)
+            avg += (thisReward - avg) / n # rolling avg calculation
+            # update the new value function and 'n' for rolling avg
             self.value[state][action] = avg
+            self.valueCnt[state][action] = n
         # clear the history
         self.history = []
 
@@ -67,6 +79,43 @@ class Action:
     RIGHT = 1
     DOWN = 2
     LEFT = 3
+
+# Returns the index of the highest value, breaking ties RANDOMLY
+def argmax(arr: list):
+    max = None
+    maxIndex = None
+    for i in range(len(arr)):
+        item = arr[i]
+
+        # Don't allow for string inputs
+        if type(item) == str:
+            return None
+
+        # check if 'item' can be cast as a float
+        try:
+            item = float(item)
+        except:
+            # Error: incompatible types in the list
+            return None
+
+        # keep track of the highest value so far
+        if max == None or item > max:
+            max = item
+            maxIndex = i
+
+    # check for ties, pick a random one among them
+    if arr.count(max) > 1:
+        # find the index of each tie value
+        indexes = []
+        for i in range(len(arr)):
+            if arr[i] == max:
+                indexes.append(i)
+        # pick a random one of the ties
+        maxIndex = random.choice(indexes)
+
+    # return the index of the max value (or a random one of the ties) 
+    return maxIndex
+        
 
 def initValuesAtState(agent: Agent, state):
     arr = []
@@ -81,7 +130,7 @@ def initValuesAtState(agent: Agent, state):
 
 def main():
     # create the gridworld
-    animals = gw.initGridworld(30, 30, 3)
+    animals = gw.initGridworld(10, 10, 3)
 
     # create N agents
     N = 3
@@ -93,7 +142,7 @@ def main():
     roundNum = 0
     while True:
 
-        if roundNum > 0 and roundNum % 10 == 0:
+        if roundNum > 0 and roundNum % 20 == 0:
             gw.spawnFood(2)
 
         # for each agent
@@ -119,9 +168,6 @@ def main():
                     dy = -1
                 case Action.LEFT:
                     dx = -1
-            # bodge fix to make them NOT GO DOWN
-            if act != Action.DOWN:
-                agent.reward(1)
 
 
             # Apply the action
@@ -130,8 +176,10 @@ def main():
             # This is likely going to be a continuous (non-episodic) agent, so it's kinda weird yk
             # I suppose more likely is that we keep track of actions taken for each agent, then when we
             # actually achieve something good or bad, then we doll out rewards (e.g. food or pain).
-        if roundNum > 10**4:
+        if roundNum > 10**5:
             gw.printWorld()
+            a = agents[0]
+            gw.printVision(gw.getAnimalVision(a.animal, a.r), a.animal.x, a.animal.y, a.r)
             input("Press enter to continue\n")
         roundNum += 1
         print(roundNum)
