@@ -14,7 +14,7 @@ class Agent:
         self.value = {}
         self.valueCnt = {}
         self.epsilon = 0.10
-        self.r = 2
+        self.r = 4
         self.initValue = 100
         self.history = []
 
@@ -29,9 +29,6 @@ class Agent:
 
         # Pick option with highest value function (Exploit)
         action = argmax(self.value[str(state)])
-        # debug output
-        if self.animal.id == 0:
-            print(f"rewards: {self.value[str(state)]}")
 
         n = self.valueCnt[state][action]
         if n > 20:
@@ -47,8 +44,6 @@ class Agent:
         return action
 
     def reward(self, reward: int):
-        if self.animal.id == 0:
-            print(f"Reward for animal {self.animal.id}!!")
         # go through each action in the history
         for i in range(len(self.history)):
             d = self.history[i]
@@ -59,7 +54,6 @@ class Agent:
 
             avg = self.value[state][action]
             n = self.valueCnt[state][action] # get the number of times you've updated this action
-            print(f"n = {n}")
 
             n += 1
             # 'thisReward' is the reward for this particular action
@@ -130,7 +124,7 @@ def initValuesAtState(agent: Agent, state):
 
 def main():
     # create the gridworld
-    animals = gw.initGridworld(10, 10, 3)
+    animals = gw.initGridworld(30, 20, 3)
 
     # create N agents
     N = 3
@@ -142,8 +136,8 @@ def main():
     roundNum = 0
     while True:
 
-        if roundNum > 0 and roundNum % 20 == 0:
-            gw.spawnFood(2)
+        if roundNum > 0 and roundNum % 10 == 0:
+            gw.spawnFood(5)
 
         # for each agent
         actions = {}
@@ -176,7 +170,7 @@ def main():
             # This is likely going to be a continuous (non-episodic) agent, so it's kinda weird yk
             # I suppose more likely is that we keep track of actions taken for each agent, then when we
             # actually achieve something good or bad, then we doll out rewards (e.g. food or pain).
-        if roundNum > 10**5:
+        if roundNum > 10**6:
             gw.printWorld()
             a = agents[0]
             gw.printVision(gw.getAnimalVision(a.animal, a.r), a.animal.x, a.animal.y, a.r)

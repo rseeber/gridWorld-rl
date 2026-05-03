@@ -24,10 +24,12 @@ worldY = None
 animals = []
 
 def getWorld(x, y):
-    try:
+    # Out of Bounds values (recall [-1] gives [last-1] in Python)
+    if x < 0 or x >= worldX or y < 0 or y >= worldY:
+        val = Symbol.OUT_OF_BOUNDS
+    # Normal case
+    else:
         val = world[y][x]
-    except IndexError:
-        val = Symbol.OUT_OF_BOUNDS # -2: Out of bounds
     return val
 
 
@@ -208,8 +210,8 @@ def moveAnimal(animal: Animal, dx: int, dy: int):
     # set the OLD position to be empty
     setWorld(animal.x, animal.y, None)
     # update coords on the Animal class object
-    animal.x += dx
-    animal.y += dy
+    animal.x = x+dx
+    animal.y = y+dy
 
 
 # MAIN()
