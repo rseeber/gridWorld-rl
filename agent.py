@@ -7,16 +7,21 @@ class Agent:
     exampleValue = {"<hash>":["opt1 value", "opt2 value"],
                     "abc123": [12.53, -2.04, 3.71]}
 
-    def __init__(self, animal: gw.Animal):
+    def __init__(self, animal: gw.Animal, agent: Agent = None):
         self.animal = animal
         animal.agent = self
 
         self.value = {}
         self.valueCnt = {}
         self.epsilon = 0.10
-        self.r = 4
+        self.r = 2
         self.initValue = 100
         self.history = []
+
+        # clone the mind of the prev 
+        if agent != None:
+            self.value = agent.value
+            self.valueCnt = agent.valueCnt
 
     def addHistory(self, action: int, state: str):
         self.history.append({state: action})
@@ -74,6 +79,8 @@ class Action:
     DOWN = 2
     LEFT = 3
 
+trainingNum = 10**6
+
 # Returns the index of the highest value, breaking ties RANDOMLY
 def argmax(arr: list):
     max = None
@@ -123,11 +130,12 @@ def initValuesAtState(agent: Agent, state):
 
 
 def main():
-    # create the gridworld
-    animals = gw.initGridworld(30, 20, 3)
-
     # create N agents
-    N = 3
+    N = 1
+
+    # create the gridworld
+    animals = gw.initGridworld(30, 20, N)
+
     agents = []
     for i in range(N):
         agents.append(Agent(animals[i]))
@@ -137,11 +145,19 @@ def main():
     while True:
 
         if roundNum > 0 and roundNum % 10 == 0:
-            gw.spawnFood(5)
+            gw.spawnFood(10)
 
         # for each agent
         actions = {}
         for a in agents:
+            # kill agents which have no energy left
+            if a.animal.energy <= 0 and len(agents) > 1:
+                print("KILLING AGENT")
+                agents.remove(a)
+                gw.setWorld(a.animal.x, a.animal.y, gw.Symbol.MEAT)
+                gw.animals.remove(a.animal)
+                continue
+
             # get the action for the agent
             state = gw.getAnimalVision(a.animal, a.r)
             action = a.getAction(state)
@@ -170,7 +186,21 @@ def main():
             # This is likely going to be a continuous (non-episodic) agent, so it's kinda weird yk
             # I suppose more likely is that we keep track of actions taken for each agent, then when we
             # actually achieve something good or bad, then we doll out rewards (e.g. food or pain).
-        if roundNum > 10**6:
+
+            # Spawn a new child when the parent eats enough food
+            childX, childY = agent.animal.x+1, agent.animal.y+1
+            if agent.animal.energy > 100 and gw.getWorld(childX, childY) == None:
+                print("CREATING OFFSPRING")
+                # create the child
+                child = gw.Animal(childX, childY, len(gw.animals) % 10)
+                # place it into the world
+                gw.animals.append(child)
+                gw.setWorld(childX, childY, gw.Symbol.ANIMAL)
+                #assign an agent to the animal
+                agents.append(Agent(child, agent))
+                # reduce the food
+                agent.animal.energy -= 50
+        if roundNum > trainingNum:
             gw.printWorld()
             a = agents[0]
             gw.printVision(gw.getAnimalVision(a.animal, a.r), a.animal.x, a.animal.y, a.r)
@@ -182,4 +212,5 @@ def main():
 
 
 if __name__ == "__main__":
+    trainingNum = int(input("Enter training rounds:\n> "))
     main()

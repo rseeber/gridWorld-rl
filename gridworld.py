@@ -5,17 +5,26 @@ class Animal:
         self.x = x
         self.y = y
         self.id = id
-        self.energy = 10
+        self.energy = 50
         self.agent = None
 
 class Symbol:
     EMPTY = None
     ANIMAL = 0
     FOOD = 1
-    WALL = 2
+    MEAT = 2
+    WALL = 3
+
 
     HIDDEN = -1
     OUT_OF_BOUNDS = -2
+    convert = {EMPTY: "_", 
+               ANIMAL: "A", 
+               FOOD: "*", 
+               MEAT: "%",
+               WALL: "#", 
+               HIDDEN: "?",
+               OUT_OF_BOUNDS: " "}
 
 
 world = [] # options {animal 0, food 1, wall 2}
@@ -49,12 +58,6 @@ def initWorld(sizeX, sizeY, homogValue=None):
             world[y].append(homogValue)
 
 def printVision(arr, centerX, centerY, r):
-    convert = {Symbol.EMPTY: "_", 
-               Symbol.ANIMAL: "A", 
-               Symbol.FOOD: "*", 
-               Symbol.WALL: "#", 
-               Symbol.HIDDEN: "?",
-               Symbol.OUT_OF_BOUNDS: " "}
     # iterate through each x, y tile
     for y in range(len(arr)):
         for x in range(len(arr[y])):
@@ -67,27 +70,26 @@ def printVision(arr, centerX, centerY, r):
                 val = findAnimal(globalX, globalY).id
             else:
                 # use the conversion table
-                val = convert[val]
+                val = Symbol.convert[val]
             print(f"{val} ", end="")
         print()
     print("\n")
 
 def printWorld():
-    convert = {None: "_", 0: "A", 1: "*", 2: "#"}
     # iterate through each x, y tile
     for y in range(worldY):
         for x in range(worldX):
             # get the value at that tile
             val = getWorld(x,y)
             # if it's an animal, represent it by its id
-            if val == 0: 
+            if val == Symbol.ANIMAL: 
                 try:
                     val = findAnimal(x, y).id
                 except:
                     print(f"\ncouldn't find animal at x = {x}, y = {y}\nanimals: {animals}")
             # otherwise, use the conversion table
             else:
-                val = convert[val]
+                val = Symbol.convert[val]
             print(f"{val} ", end="")
         print()
     print("\n")
@@ -192,18 +194,22 @@ def moveAnimal(animal: Animal, dx: int, dy: int):
     newSpot = getWorld(x+dx, y+dy) 
 
     # Don't allow animals to move to occupied locations
-    if newSpot not in [Symbol.FOOD, Symbol.EMPTY]:
+    if newSpot not in [Symbol.FOOD, Symbol.MEAT, Symbol.EMPTY]:
         # Error
         return None
 
     # depleate energy when moving
-    animal.energy -= 0.1
+    animal.energy -= 1
 
     if newSpot == Symbol.FOOD:
-        animal.energy += 5
+        animal.energy += 10
         # Is this where we should be sending the reward signal?
         if animal.agent != None:
             animal.agent.reward(1)
+    elif newSpot == Symbol.MEAT:
+        animal.energy += 50
+        if animal.agent != None:
+            animal.agent.reward(5)
 
     # place the animal in the NEW position
     setWorld(x+dx, y+dy, 0)   
