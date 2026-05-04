@@ -18,7 +18,7 @@ class Symbol:
 
     HIDDEN = -1
     OUT_OF_BOUNDS = -2
-    convert = {EMPTY: "_", 
+    convert = {EMPTY: " ", 
                ANIMAL: "A", 
                FOOD: "*", 
                MEAT: "%",
