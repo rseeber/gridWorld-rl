@@ -142,6 +142,14 @@ def initGridworld(sizeX, sizeY, organismCnt):
         setWorld(0, i, Symbol.WALL)
         setWorld(worldX-1, i, Symbol.WALL)
     
+    # build some walls
+    wall = False
+    if wall:
+        for y in range(worldY):
+            if 1 >= abs(y - worldY//2):
+                continue
+            else:
+                setWorld(worldX//2, y, Symbol.WALL, overwrite=False)
 
     # setup the animals
     animals = []
@@ -161,6 +169,7 @@ def initGridworld(sizeX, sizeY, organismCnt):
     # also for now, just spawn some food at the bottom row
     for i in range(worldX):
         setWorld(i, worldY-2, Symbol.FOOD, overwrite=False)
+
 
     print("Gridworld intialized:")
     printWorld()
